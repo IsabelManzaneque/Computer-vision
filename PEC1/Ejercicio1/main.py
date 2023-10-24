@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-@author: Isabel
-
+File: main.py
+Author: Isabel Manzaneque
+Date: 10/10/2024
+Description: Eliminación de ruído en imágenes escaneadas.
 
 """
 
@@ -149,8 +151,7 @@ def dilate(img):
     kernel = np.ones((2,2), np.uint8)  
     return cv2.erode(img, kernel, iterations=1)
 
-def displayResult():
-    
+def displayResult():    
     """
     Muestra un antes y un después de la imagen modificada      
     
