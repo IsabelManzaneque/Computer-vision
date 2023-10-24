@@ -1,49 +1,49 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct  5 17:46:26 2023
-
 @author: Isabel
 
--	La aplicación debe tomar una imagen y eliminar el ruido
--	La aplicación toma la ruta de la imagen por consola y la carga
--	Una vez cargada la imagen, se le podrán añadir de forma interactiva y secuencial los operadores de eliminación de ruido
--	La eliminación del ruido puede implicar la aplicación de diferentes operadores
 
 """
 
 import os
-import pandas as pd
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
-
 
     
 def roiDecorator(func):
+    """
+    Este decorator permite usar utilizar todas las funciones para la imagen
+    completa o para un ROI realizando las siguientes acciones:
+        
+        - Si el usuario ha seleccionado un ROI, recorta este y lo pasa a la 
+          funcion principal. Tras realizar los cambios, lo pega a la imagen y 
+          y la devuelve con los cambios sobre el ROI 
     
-    def wrapper(imgCopy):
+        - Si el usuario no selecciona una ROI, se pasa a la funcion principal
+          la imagen sin recortar y se devuelve con los cambios
+       
+    """
+    def wrapper(img):
         
         global isROI
         roi = None
         
-        if isROI:
-            
-            x, y, width, height = cv2.selectROI(imgCopy)
-            roi = imgCopy[y:y+height, x:x+width]
+        # Si isROI es True, se recorta el ROI 
+        if isROI:            
+            x, y, width, height = cv2.selectROI(img)
+            roi = img[y:y+height, x:x+width]
             cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            cv2.destroyAllWindows()        
         
-        img = imgCopy if isROI is False else roi            
+        # A la funcion se pasa la imagen o el ROI 
+        changedImg = func(img if isROI is False else roi)
         
-        aux = func(img)
-        
+        # Si isROI es True se pega el ROI cambiado a la imagen
         if isROI:
-            imgCopy[y:y+height, x:x+width] = aux
+            img[y:y+height, x:x+width] = changedImg
             isROI = False
-            return imgCopy
-            
-        else:
-            return aux
+            return img    
+        return changedImg
         
     return wrapper
 
@@ -86,12 +86,38 @@ def thresholdFilter(img):
     
     """
     threshold = ""
-    while threshold == "":
+    while threshold not in range(256):
         try:
             threshold = int(input("Seleccionar un nivel de umbral (0-255): "))
         except ValueError:
             print("Introduzca un valor numérico")
     return cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)[1]
+
+@roiDecorator
+def blackFilter(img):
+    """
+    Función de tipo umbral que recorre los pixeles de la imagen. Si la
+    intensidad del pixel es inferior al umbral, establece el pixel a blanco.     
+    
+    """
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    alto, ancho = img.shape
+    
+    threshold = ""
+    while threshold not in range(256):
+        try:
+            threshold = int(input("Seleccionar un nivel de umbral (0-255): "))
+        except ValueError:
+            print("Introduzca un valor numérico")
+    
+    # Si la intensidad del pixel es menor al umbral 
+    # establece el pixel a blanco
+    for i in range(alto):
+        for j in range(ancho):
+            if img[i][j] < threshold:
+                img[i][j] = 255   
+                
+    return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
 @roiDecorator
 def sharpenImage(img):
@@ -131,7 +157,9 @@ def displayResult():
     """
     global originalImg, imgCopy
     res = np.hstack((originalImg,imgCopy))
-    cv2.imshow("Result", res)
+    cv2.imshow("Antes - Despues", res)
+    cv2.imshow("Original", originalImg)
+    cv2.imshow("Modificada", imgCopy)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -140,15 +168,15 @@ operatorDict = {
     1 : nmlFilter,
     2 : medianFilter,
     3 : thresholdFilter,
-    4 : sharpenImage,
-    5 : erode,
-    6 : dilate,
-    8 : displayResult
+    4 : blackFilter,
+    5 : sharpenImage,
+    6 : erode,
+    7 : dilate,
+    9 : displayResult
   
     }
 
-path = "C:/Users/Isabe/Desktop/VA/pecs/2024/PEC1/CodigoEjercicio1/DibujosNPT/N_331_JVC_TOTAL-ev1-h.png"
-#path = input("Introduzca la ruta de la imagen a procesar: ")
+path = input("Introduzca la ruta de la imagen a procesar: ")
 assert os.path.exists(path), "Ruta especificada no existe"
 originalImg = cv2.imread(path)
 imgCopy = originalImg.copy()    
@@ -158,23 +186,27 @@ userInput = ""
 while userInput == "":
     print("\n1 - Filtro Non-Local-Means")
     print("2 - Filtro Mediana")
-    print("3 - Umbralizacion")
-    print("4 - Realzar bordes")
-    print("5 - Erosionar")
-    print("6 - Dilatar")
-    print("7 - seleccionar ROI")
-    print("8 - Mostrar resultado")
-    print("9 - Salir")
+    print("3 - Filtro Umbralizacion")
+    print("4 - Filtro Negro")
+    print("5 - Realzar bordes")
+    print("6 - Erosionar")
+    print("7 - Dilatar")
+    print("8 - Seleccionar ROI")
+    print("9 - Mostrar resultado")
+    print("10 - Restablecer imagen")
+    print("11 - Salir")
     try:
-        userInput = int(input("Operador a aplicar: "))
-        
-        if userInput == 9:
+        userInput = int(input("Operador a aplicar: "))        
+        if userInput == 11:
             print("\nCerrando aplicacion...")
             break
-        if userInput == 7:
+        elif userInput == 10:            
+            imgCopy = originalImg.copy() 
+            print("\nRestableciendo imagen original...")
+        elif userInput == 8:
             isROI = True
             print("\nLa proxima operacion se realizara sobre el ROI")        
-        elif userInput in [1,2,3,4,5,6]:
+        elif userInput in [1,2,3,4,5,6,7]:
             imgCopy = operatorDict[userInput](imgCopy)
             print("\nOperador aplicado correctamente")        
         else:
