@@ -183,8 +183,7 @@ originalImg = cv2.imread(path)
 imgCopy = originalImg.copy()    
 isROI = False
 
-userInput = ""
-while userInput == "":
+while True:
     print("\n1 - Filtro Non-Local-Means")
     print("2 - Filtro Mediana")
     print("3 - Filtro Umbralizacion")
@@ -197,26 +196,26 @@ while userInput == "":
     print("10 - Restablecer imagen")
     print("11 - Salir")
     try:
-        userInput = int(input("Operador a aplicar: "))        
-        if userInput == 11:
-            print("\nCerrando aplicacion...")
-            break
-        elif userInput == 10:            
-            imgCopy = originalImg.copy() 
-            print("\nRestableciendo imagen original...")
-        elif userInput == 8:
-            isROI = True
-            print("\nLa proxima operacion se realizara sobre el ROI")        
+        userInput = int(input("Operador a aplicar: "))  
+        if userInput < 1 or userInput > 11:
+            raise ValueError("Error! Introduzca un número entre 1 y 11")
         elif userInput in [1,2,3,4,5,6,7]:
             imgCopy = operatorDict[userInput](imgCopy)
-            print("\nOperador aplicado correctamente")        
-        else:
-            operatorDict[userInput]()       
+            print("\nOperador aplicado con exito") 
+        elif userInput == 8:
+            isROI = True
+            print("\nLa proxima operacion se realizara sobre el ROI")     
+        elif userInput == 9:
+            operatorDict[userInput]()
+        elif userInput == 10:            
+            imgCopy = originalImg.copy() 
+            print("\nRestablecida imagen original")
+        elif userInput == 11:
+            print("\nCerrando aplicacion...")
+            break               
     except ValueError as e:
-        print("\nError! Introduzca uno de las siguientes opciones: \n")
-        print(e)
-    finally:
-        userInput = ""
+        print("\nError! Introduzca un número entre 1 y 11")
+
      
         
      
