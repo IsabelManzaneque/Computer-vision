@@ -20,31 +20,22 @@ def scaling(x,y):
     return np.matrix([[x,0,0],[0,y,0],[0,0,1]])
     
 
-def rotation(angle, rotCenterX, rotCenterY):
+def rotation(angle):
     
     """
-    Devuelve una matriz de rotacion de un angulo alrededor de un punto
+    Devuelve una matriz de rotacion de un angulo pasado como parametro
     
-    Args:
-        - angle: angulo de rotacion
-        - rotCenterX: coordenada del eje X sobre la que se va a rotar
-        - rotCenterY: coordenada del eje Y sobre la que se va a rotar
-    Returns:
-        - Matriz de transformacion    
     """
         
     cos = np.cos(np.radians(angle))
-    sin = np.sin(np.radians(angle))
-    tX = rotCenterX * (1 - cos) + rotCenterY * sin
-    tY = rotCenterY * (1 - cos) - rotCenterX * sin
-    
-    return np.array([[cos, -sin, tX],[sin, cos, tY],[0, 0, 1]])  
+    sin = np.sin(np.radians(angle))     
+    return np.array([[cos, -sin, 0],[sin, cos, 0],[0, 0, 1]])  
 
     
     
 def shearing(axis, angle):
     """
-    Devuelve una matriz de rotacion de un angulo alrededor de un punto
+    
     
     Args:
         - axis: eje sobre el que se desliza la imagen
@@ -76,8 +67,7 @@ def reescalarYrotar(img):
     """
 
     img = cv2.resize(img, (200, 200))
-    rotationMatrix = cv2.getRotationMatrix2D((200/2, 200/2), 45, 0.70)    
-    
+    rotationMatrix = cv2.getRotationMatrix2D((200/2, 200/2), 45, 0.70)        
     return cv2.warpAffine(img, rotationMatrix, (200, 200))
     
 def transformacionCompuesta1(img):        
@@ -90,36 +80,40 @@ def transformacionCompuesta1(img):
     T3.- Reescalar a la mitad en ambos ejes la imagen obtenida de T2. 
     """   
     
-    
+    img = cv2.resize(img, (400, 400))
     rows,cols = img.shape[:2] 
-    esquinas = np.array([[0, 0, 1], [cols, 0, 1], [0, rows, 1], [cols, rows, 1]])
-    imgCenterX = (cols-1)/2
-    imgCenterY = (rows-1)/2
+    corners = np.array([[0, 0, 1], [cols, 0, 1], [0, rows, 1], [cols, rows, 1]])    
     
+    # Transformacion 1 -----------------------------------------------
     
-    shearMatrix = shearMatrix = shearing("X",-30)        
-    rotationMatrix = rotation(-90, imgCenterX, imgCenterY) 
-    scalingMatrix = scaling(0.5,0.5)    
+    shearMatrix = shearMatrix = shearing("X",-30)       
     
     # Calcular las coordenadas de las esquinas después de hacer shear
-    esquinasSheared = np.dot(esquinas, shearMatrix.T)
+    shearedCorners = corners @ shearMatrix.T
     
-    # Calcular el desplazamiento que las coordenadas estén dentro de la ventana
-    # Calcula las minimas coordenadas X e Y de las coordenadas transformadas
-    xShift = int(max(0, -np.min(esquinasSheared[:, 0])))
-    yShift = int(max(0, -np.min(esquinasSheared[:, 1])))
+    # Desplazamiento necesario en x e y tras shear 
+    xShift = int(max(0, -np.min(shearedCorners[:, 0])))
 
     translationMatrix = translation(xShift, 0) 
-   
-    #Al hacer el shear debemos hacer una traslacion a la derecha
-    #Podemos averiguar cuanto debemos desplazar
-    tsMatrix = scalingMatrix @ translationMatrix @ shearMatrix
+    transShearMatrix =  translationMatrix @ shearMatrix    
     
-    img = cv2.warpAffine(img, tsMatrix[:2, :], (cols, rows))      
-    #img = cv2.warpAffine(img, rotationMatrix[:2, :], (cols, rows))      
-    #img = cv2.warpAffine(img, scalingMatrix[:2, :], (rows//2, cols//2)) 
+    img = cv2.warpAffine(img, transShearMatrix[:2, :], (cols+xShift, rows)) 
     
-    return img
+    # Transformacion 2 -------------------------------------------------   
+  
+    rotationMatrix = rotation(-90) 
+    translationMatrix = translation(0, img.shape[1])    
+    rotaTransMatrix = translationMatrix @ rotationMatrix
+
+    img = cv2.warpAffine(img, rotaTransMatrix[:2, :], (rows, cols+xShift))  
+    
+    # Transformacion 3 -------------------------------------------------
+    
+    scalingMatrix = scaling(0.5,0.5) 
+    
+    return cv2.warpAffine(img, scalingMatrix[:2, :], (rows//2, (cols+xShift)//2)) 
+    
+    
     
 def transformacionCompuesta2(img):        
     """
@@ -130,20 +124,17 @@ def transformacionCompuesta2(img):
     T2.- girar 90 grados a la izquierda 
     T3.- Reescalar a la mitad en ambos ejes la imagen obtenida de T2.        
     """   
+    img = cv2.resize(img, (400, 400))
     rows,cols = img.shape[:2] 
-    imgCenterX = (cols-1)/2
-    imgCenterY = (rows-1)/2  
+        
+    shearMatrix = shearMatrix = shearing("X",-30)   
+    rotationMatrix = rotation(-90) 
+    translationMatrix = translation(0, img.shape[1])
+    scalingMatrix = scaling(0.5,0.5)  
     
-
-    shearMatrix = shearMatrix = shearing("X",-30)     
-    rotationMatrix = rotation(-90, imgCenterX, imgCenterY) 
-    scalingMatrix = scaling(0.5,0.5)   
+    transformationMatrix =  scalingMatrix @ translationMatrix @ rotationMatrix @ shearMatrix 
     
-    # Matriz de transformacion 
-    transformationMatrix =  scalingMatrix @ rotationMatrix @ shearMatrix  
-    img = cv2.warpAffine(img, transformationMatrix[:2, :], (rows//2, cols//2))
-    
-    return img
+    return cv2.warpAffine(img, transformationMatrix[:2, :], (rows//2, (cols+230)//2))    
        
        
 def transformacionPolar(img):        
