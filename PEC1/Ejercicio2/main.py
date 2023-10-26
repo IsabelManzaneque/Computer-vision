@@ -170,17 +170,34 @@ def transformacionNoLineal(img):
        
     """
     
+    # Se puede dividir la imagen original en 2    
+  
+    height, width = img.shape[:2]    
+    firstHalf = img[:, :width//2]
+    secondHalf = img[:, width//2:]
+    
+    # estrechar la mitad izquierda a un tercio
+        
+    scale = (width*1/3) / (width/2)
+    scalingMatrix = scaling(scale, 1)
+    firstHalf = cv2.warpAffine(firstHalf, scalingMatrix[:2, :], (int(width * 1/3), height))
+    
+    # expandir la mitad derecha a 2 tercios
+    
+    scale = (width*2/3) / (width/2)
+    scalingMatrix = scaling(scale, 1)
+    secondHalf = cv2.warpAffine(secondHalf, scalingMatrix[:2, :], (int(width * 2/3), height))
+    
+    return cv2.hconcat([firstHalf, secondHalf])
     
  
 def displayResult():    
     """
-    Muestra un antes y un después de la imagen modificada      
+    Muestra la imagen original y la modificada      
     
     """
     global originalImg, imgCopy
-    #res = np.hstack((originalImg,imgCopy))
-    #cv2.imshow("Antes - Despues", res)
-    #cv2.imshow("Original", originalImg)
+    cv2.imshow("Original", originalImg)
     cv2.imshow("Modificada", imgCopy)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
