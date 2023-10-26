@@ -70,7 +70,7 @@ def reescalarYrotar(img):
     rotationMatrix = cv2.getRotationMatrix2D((200/2, 200/2), 45, 0.70)        
     return cv2.warpAffine(img, rotationMatrix, (200, 200))
     
-def transformacionCompuesta1(img):        
+def transformacionAfinCompuesta1(img):        
     """
     Implementando las siguientes transformaciones por separado 
     (con matrices de transformación distintas).
@@ -115,7 +115,7 @@ def transformacionCompuesta1(img):
     
     
     
-def transformacionCompuesta2(img):        
+def transformacionAfinCompuesta2(img):        
     """
     Implementando las transformaciones siguientes en un solo paso (con una 
     única matriz de transformación obtenida por composición de matrices)
@@ -138,18 +138,39 @@ def transformacionCompuesta2(img):
        
        
 def transformacionPolar(img):        
-    """
+    """  
     
        
     """
-    pass
+    rows, cols = img.shape[:2] 
+    imgCenter = (cols // 2, rows // 2)
+    radius = int(np.sqrt(rows ** 2 + cols ** 2) / 2)    
+    
+    # Aplicar la transformación log-polar    
+    return cv2.warpPolar(img, (360, 360), imgCenter, radius, cv2.WARP_POLAR_LOG)
+    
+    
+    
+
+def deshacerPolar(img):
+    """
+    """
+    
+    rows, cols = img.shape[:2]      
+    imgCenter = (cols // 2, rows // 2)
+    radius = int(np.sqrt(rows ** 2 + cols ** 2) / 2)
+    
+    polarImg = transformacionPolar(img)
+    
+    return cv2.warpPolar(polarImg, (cols, rows), imgCenter, radius, cv2.WARP_POLAR_LOG + cv2.WARP_INVERSE_MAP)
     
 def transformacionNoLineal(img):        
     """
     
        
     """
-    pass
+    
+    
  
 def displayResult():    
     """
@@ -168,10 +189,11 @@ def displayResult():
 operatorDict = {
     
     1 : reescalarYrotar,
-    2 : transformacionCompuesta1,
-    3 : transformacionCompuesta2,
+    2 : transformacionAfinCompuesta1,
+    3 : transformacionAfinCompuesta2,
     4 : transformacionPolar,
-    5 : transformacionNoLineal,
+    5 : deshacerPolar,
+    6 : transformacionNoLineal,
      
     }
 
@@ -184,22 +206,23 @@ while True:
     print("2 - Transformacion afin compuesta 1")
     print("3 - Transformacion afin compuesta 2")
     print("4 - Transformacion polar")
-    print("5 - Transformacion no lineal")   
-    print("6 - Salir")
+    print("5 - Deshacer transformacion polar")
+    print("6 - Transformacion no lineal")   
+    print("7 - Salir")
     try:
         userInput = int(input("Operador a aplicar: "))        
-        if userInput < 1 or userInput > 6:
-            raise ValueError("\nError! Introduzca un número entre 1 y 5")
-        elif userInput in [1,2,3,4,5]:
+        if userInput < 1 or userInput > 7:
+            raise ValueError("\nError! Introduzca un número entre 1 y 7")
+        elif userInput in [1,2,3,4,5,6]:
             imgCopy = operatorDict[userInput](imgCopy)     
             displayResult()  
             imgCopy = originalImg.copy() 
             print("\nRestablecida imagen original")
-        elif userInput == 6:
+        elif userInput == 7:
             print("\nCerrando aplicacion...")
             break
     except ValueError as e:
-        print("\nError! Introduzca un número entre 1 y 5")
+        print("\nError! Introduzca un número entre 1 y 7")
         print(e)
      
         
