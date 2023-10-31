@@ -19,7 +19,7 @@ def translation(x,y):
     
 def scaling(x,y):
     """
-    Devuelve una matriz de reescalado sobre los ejes x e y
+    Devuelve una matriz de escalado sobre los ejes x e y
 
     """        
     return np.matrix([[x,0,0],[0,y,0],[0,0,1]])
@@ -54,7 +54,7 @@ def shearing(axis, angle):
 
 
     
-def reescalarYrotar(img):        
+def escalarYrotar(img):        
     """
     Aplica a la imagen parámetro un reescalado de 200 x 200 pixels, una 
     rotacion de 45 grados alrededor del su centro y un reescalado 1:0.7
@@ -124,8 +124,7 @@ def transformacionAfinCompuesta1(img):
     
     scalingMatrix = scaling(0.5,0.5) 
     
-    return cv2.warpAffine(img, scalingMatrix[:2, :], (rows//2, (cols//2))) 
-    
+    return cv2.warpAffine(img, scalingMatrix[:2, :], (rows//2, (cols//2)))     
     
     
 def transformacionAfinCompuesta2(img):        
@@ -150,36 +149,51 @@ def transformacionAfinCompuesta2(img):
     # Composicion de matrices
     transformationMatrix = scalingMatrix @ translationMatrix2 @ rotationMatrix @ translationMatrix1 @ shearMatrix 
     
-    return cv2.warpAffine(img, transformationMatrix[:2, :], (rows//2, (cols+xShift)//2))  #xShift = 230
+    return cv2.warpAffine(img, transformationMatrix[:2, :], (rows//2, (cols+xShift)//2))  
        
 
 def rectanguloAobjetivo():
+    """
+    Genera una imagen sintetica de un rectangulo de lado 40 x 20 sobre un fondo
+    y realiza una secuencia de transformaciones para colocarlo en la posicion
+    objetivo 
     
-    imagenbase = np.zeros((200,200,3), np.uint8)
+    """
+    
+    # Generar imagen sintetica ------------------------------------------------    
 
-    rectangulo = cv2.rectangle(imagenbase,(90,60),(110,100),(0,255,255),-1)
+    alto, ancho = 40, 20
     
-    angulo = 330 # angulo que queremos aplicar (30 a la derecha)
+    background = np.zeros((200,200,3)) 
+    rectangle = cv2.rectangle(background,(-ancho//2, -alto//2),(ancho//2,alto//2),(0,255,255),-1)
     
-    #Como nos dan el centro de masa rotamos respecto a eso el rectángulo con cv.getRotationMatrix2D
-    matriz = cv2.getRotationMatrix2D((100,80), angulo, 1)
+    # Rotar -30 grados y trasladar a centro de masas     
+    rotationMatrix = rotation(-30)
+    translationMatrix = translation(100,80)
+    transformationMatrix = translationMatrix @ rotationMatrix    
+    imgBefore = cv2.warpAffine(rectangle, transformationMatrix[:2,:], (200,200))
     
-    imgOriginal = cv2.warpAffine(rectangulo.astype(np.float32), matriz[:2,:], (200,200))
     
+    # Transformaciones --------------------------------------------------------    
     
+    tM1 = translation(-100, -80)      
+    rM = rotation(30)    
+    sM = scaling(0.5,0.5)         
+    tM = sM @ rM @ tM1
     
-    cv2.imshow('Apartado B3 original',imgOriginal.astype(np.uint8))
-    
+    imgAfter = cv2.warpAffine(imgBefore, tM[:2,:], (200,200))
+
+    cv2.imshow('Rectángulo Antes', imgBefore)
+    cv2.imshow('Rectángulo Después', imgAfter)    
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    
-    
-    
+    cv2.destroyAllWindows()         
     
 
 def transformacionPolar(img):        
     """  
-    
+    Utiliza cv2.warpPolar para obtener una imagen logPolar cuadrada, centrada
+    en el centro de la imagen original con una fila por grado y ajustada para 
+    ver toda la imagen original. 
        
     """
     rows, cols = img.shape[:2] 
@@ -187,13 +201,13 @@ def transformacionPolar(img):
     radius = int(np.sqrt(rows ** 2 + cols ** 2) / 2)    
     
     # Aplicar la transformación log-polar    
-    return cv2.warpPolar(img, (360, 360), imgCenter, radius, cv2.WARP_POLAR_LOG)
-    
-    
-    
+    return cv2.warpPolar(img, (360, 360), imgCenter, radius, cv2.WARP_POLAR_LOG)  
+       
 
 def deshacerPolar(img):
     """
+    Deshace una transformación polar aplicada a una imagen realizando
+    la transformación inversa
     """
     
     rows, cols = img.shape[:2]      
@@ -204,25 +218,27 @@ def deshacerPolar(img):
     
     return cv2.warpPolar(polarImg, (cols, rows), imgCenter, radius, cv2.WARP_POLAR_LOG + cv2.WARP_INVERSE_MAP)
     
+
 def transformacionNoLineal(img):        
     """
-    
+    Deforma la imagen de manera que su mitad izquierda ocupa 1/3 de la imagen 
+    final y la mitad derecha ocupa los 2/3 restantes.       
        
     """
     
-    # Se puede dividir la imagen original en 2    
+    # Divide la imagen original en dos mitades     
   
     height, width = img.shape[:2]    
     firstHalf = img[:, :width//2]
     secondHalf = img[:, width//2:]
     
-    # estrechar la mitad izquierda a un tercio
+    # estrecha la mitad izquierda a un tercio
         
     scale = (width*1/3) / (width/2)
     scalingMatrix = scaling(scale, 1)
     firstHalf = cv2.warpAffine(firstHalf, scalingMatrix[:2, :], (int(width * 1/3), height))
     
-    # expandir la mitad derecha a 2 tercios
+    # expande la mitad derecha a 2 tercios
     
     scale = (width*2/3) / (width/2)
     scalingMatrix = scaling(scale, 1)
@@ -245,7 +261,7 @@ def displayResult():
     
 operatorDict = {
     
-    1 : reescalarYrotar,
+    1 : escalarYrotar,
     2 : transformacionAfinCompuesta1,
     3 : transformacionAfinCompuesta2,
     4 : transformacionPolar,
