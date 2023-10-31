@@ -198,7 +198,7 @@ while True:
     try:
         userInput = int(input("Operador a aplicar: "))  
         if userInput < 1 or userInput > 11:
-            raise ValueError("Error! Introduzca un número entre 1 y 11")
+            raise ValueError
         elif userInput in [1,2,3,4,5,6,7]:
             imgCopy = operatorDict[userInput](imgCopy)
             print("\nOperador aplicado con exito") 
