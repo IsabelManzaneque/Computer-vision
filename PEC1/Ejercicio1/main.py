@@ -2,7 +2,7 @@
 """
 File: main.py
 Author: Isabel Manzaneque
-Date: 10/10/2024
+Date: 10/10/2023
 Description: Eliminación de ruído en imágenes escaneadas.
 
 """

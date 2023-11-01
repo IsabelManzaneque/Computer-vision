@@ -2,7 +2,7 @@
 """
 File: main.py
 Author: Isabel Manzaneque
-Date: 24/10/2024
+Date: 24/10/2023
 Description: Transformaciones Geometricas.
 
 """

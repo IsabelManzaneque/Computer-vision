@@ -2,7 +2,7 @@
 """
 File: main.py
 Author: Isabel Manzaneque
-Date: 31/10/2024
+Date: 31/10/2023
 Description: Calibración de la cámara.
 
 """
