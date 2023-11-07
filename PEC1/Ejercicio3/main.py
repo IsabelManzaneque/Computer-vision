@@ -17,21 +17,22 @@ import glob
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-objp = np.zeros((6*7,3), np.float32)
-objp[:,:2] = np.mgrid[0:7,0:6].T.reshape(-1,2)
+objp = np.zeros((6*9,3), np.float32)
+objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
 
 # Arrays to store object points and image points from all the images.
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
 
-images = glob.glob(".\\calib\\*.jpg")
+images = glob.glob(".\\FotosTablero\\*.jpg")
 for fname in images:
     img = cv2.imread(fname)
+    rows,cols = img.shape[:2]  
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
     # Find the chess board corners
-    ret, corners = cv2.findChessboardCorners(gray, (7,6), None)
+    ret, corners = cv2.findChessboardCorners(gray, (9,6), None)
     
     # If found, add object points, image points (after refining them)
     if ret == True:
@@ -39,9 +40,10 @@ for fname in images:
         corners2 = cv2.cornerSubPix(gray,corners, (11,11), (-1,-1), criteria)
         imgpoints.append(corners2)
         # Draw and display the corners
-        cv2.drawChessboardCorners(img, (7,6), corners2, ret)
-        cv2.imshow('img', img)
+        cv2.drawChessboardCorners(img, (9,6), corners2, ret)
+        cv2.imshow('img', cv2.resize(img, (cols//2, rows//2)))
         cv2.waitKey(0)
+   
 
 cv2.destroyAllWindows()
 
@@ -76,16 +78,17 @@ def draw(img, corners, imgpts):
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # Axis points
-objp = np.zeros((6*7,3), np.float32)
-objp[:,:2] = np.mgrid[0:7,0:6].T.reshape(-1,2)
+objp = np.zeros((6*9,3), np.float32)
+objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
 axis = np.float32([[0,0,0], [0,3,0], [3,3,0], [3,0,0],
                    [0,0,-3],[0,3,-3],[3,3,-3],[3,0,-3] ])
 
-images = glob.glob(".\\calib\\left*.jpg")
+images = glob.glob(".\\FotosTablero\\*.jpg")
 for fname in images:
     img = cv2.imread(fname)
+    rows,cols = img.shape[:2]  
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    ret, corners = cv2.findChessboardCorners(gray, (7,6),None)
+    ret, corners = cv2.findChessboardCorners(gray, (9,6),None)
     if ret == True:
         corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
         # Find the rotation and translation vectors.
@@ -93,7 +96,8 @@ for fname in images:
         # project 3D points to image plane
         imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
         img = draw(img,corners2,imgpts)
-        cv2.imshow('img',img)
+    
+        cv2.imshow('img', cv2.resize(img, (cols//2, rows//2)))
         k = cv2.waitKey(0) & 0xFF
         if k == ord('s'):
             cv2.imwrite(fname[:6]+'.png', img)
