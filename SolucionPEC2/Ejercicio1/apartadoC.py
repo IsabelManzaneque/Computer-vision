@@ -89,6 +89,31 @@ def segment(rotatedImg):
 
 
 
+def scaleContour(contour, scaleFactorX, scaleFactorY):
+    
+    # Centroide del contorno
+    M = cv2.moments(contour)
+    
+    if M['m00'] != 0:
+        cx = int(M['m10']/M['m00'])
+        cy = int(M['m01']/M['m00'])
+        
+        # Trasladar al origen restando el centro a todos los puntos
+        contourNorm = contour - [cx,cy]
+        
+        # Escalar cada punto del contorno
+        contourScaled = np.column_stack((
+            contourNorm[:, 0, 0] * scaleFactorX,
+            contourNorm[:, 0, 1] * scaleFactorY
+        ))
+        
+        # Devolverlo a su sitio
+        contourScaled = contourScaled + [cx, cy]
+        contourScaled = contourScaled.astype(np.int32)
+        
+        return contourScaled
+    
+    return contour
 
 def Normalization1(contours) :
     
@@ -97,12 +122,32 @@ def Normalization1(contours) :
     height, width = imgCopy.shape[:2]
     white_background = np.ones((height, width, 3), dtype=np.uint8) * 255
     
-    # Dibujar los contornos en la imagen en blanco
+     
+    xOffset, yOffset = 0,0
     for contour in contours:
-        cv2.drawContours(white_background, [contour], -1, (0, 0, 0))
-    
-    # Mostrar la imagen
-    
+        
+        # rectángulo delimitador del contorno
+        x, y, w, h = cv2.boundingRect(contour)
+        
+        # Calcular escala en x e y
+        scaleFactorX = 20 / w
+        scaleFactorY = 20 / h
+        
+        # escalar contorno a 20x20 y anadir el desplazamiento
+        scaledContour = scaleContour(contour, scaleFactorX, scaleFactorY) 
+        scaledContour = scaledContour + (xOffset, yOffset)
+        
+        # rectangulo del nuevo contorno
+        scaledX, scaledY, scaledW, scaledH = cv2.boundingRect(scaledContour)  
+       
+        # dibujar el contorno
+        cv2.drawContours(white_background, [scaledContour], -1, (0, 0, 0), 1)
+        
+          
+        # actualizar el desplazamiento
+        
+        xOffset, yOffset = 5, 0
+        
     return white_background
 
 
