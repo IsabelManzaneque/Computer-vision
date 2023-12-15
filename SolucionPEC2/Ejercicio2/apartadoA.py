@@ -31,19 +31,18 @@ def orbMatcher(img1, img2):
     # Sort them in the order of their distance.
     matches = sorted(matches, key = lambda x:x.distance)
     
-    resultImg = cv2.drawMatches(img1,kp1,img2,kp2,matches[:20],None, flags=2)
+    matchedImg = cv2.drawMatches(img1,kp1,img2,kp2,matches[:20],None, flags=2)
     # Draw first 10 matches.    
     
-    return resultImg, matches, kp1, kp2
+    return matchedImg, matches, kp1, kp2
 
 
 def affineTransform(img1, img2, matches, kp1, kp2):    
    
     img1KP = []
     img2KP = []
- 
-    # Los mejores son 15:18, 23:26, 24:27, 59:62, 66:69, 71:74
-    for match in matches[23:26]:      
+    
+    for match in matches[73:76]:      
         # tomar los key points de img1 y img2
         img1KP.append(kp1[match.queryIdx].pt)
         img2KP.append(kp2[match.trainIdx].pt)
@@ -59,11 +58,12 @@ def affineTransform(img1, img2, matches, kp1, kp2):
   
     
 
-matchedImg, matches, kp1, kp2 = orbMatcher(formulario,rellenoOriginal)
-rotatedImg = affineTransform(formulario,rellenoOriginal, matches, kp1, kp2)
+matchedImg, matches, kp1, kp2 = orbMatcher(formulario,rellenoRotado)
+rotatedImg = affineTransform(formulario,rellenoRotado, matches, kp1, kp2)
 
-cv2.imshow("Matches", matchedImg)
-cv2.imshow("rotada", rotatedImg)
+cv2.imshow("Matched", matchedImg)
+cv2.imshow("Original", formulario)
+cv2.imshow("Afin", rotatedImg)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
