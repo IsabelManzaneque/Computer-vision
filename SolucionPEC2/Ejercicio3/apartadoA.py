@@ -16,9 +16,10 @@ imgGrayCopy = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 ret,thresh = cv2.threshold(imgGrayCopy,225,255,0)
 contours,hierarchy = cv2.findContours(thresh, 1, 2)
 circleCounter = 0
+IncompleteCircleCounter = 0
 ellipseCounter = 0
 sideCounter = 0
-
+porcentajes = []
 
 def isCompleteCircle(contour):
     """
@@ -26,7 +27,6 @@ def isCompleteCircle(contour):
 
     """
     global img
-    
     contourArea = cv2.contourArea(contour)
     (x,y),radius = cv2.minEnclosingCircle(contour)
     center = (int(x),int(y))
@@ -43,13 +43,34 @@ def isCompleteCircle(contour):
     
     return False  
 
+def isIncompleteCircle(contour):
+    """
+    Evaluar el porcentaje de cuña faltante respecto al circulo completo
+    """
+    
+    contourArea = cv2.contourArea(contour)
+    perimeter = cv2.arcLength(contour, True)
+    (x,y),radius = cv2.minEnclosingCircle(contour)
+    radius = int(radius)
+    circleArea = np.pi*(radius**2)    
+    
+    # Aproximación poligonal del contorno
+    epsilon = 0.001 * perimeter
+    approx = cv2.approxPolyDP(contour, epsilon, True)
+    cv2.drawContours(img, [approx], 0, (0, 255, 255), 2) 
+    
+    diferencia = circleArea - contourArea
+    porcentaje = round(((diferencia / circleArea) * 100),2)
+    porcentajes.append(porcentaje)
+    
+    
 def isEllipse(contour):
     """
     Detecta si un contorno es una elipse
 
     """
-    global img
     
+    global img
     # cv2.fitEllipse requiere que el contorno tenga al menos 5 puntos
     if len(contour) < 5:
         return False
@@ -62,60 +83,63 @@ def isEllipse(contour):
     ellipseArea = np.pi*(MA/2)*(ma/2)
 
     if abs(contourArea - ellipseArea) < 0.010 * ellipseArea:
-        img = cv2.ellipse(img, ellipse, (0, 255, 0), 2)  
+        img = cv2.ellipse(img, ellipse, (0, 0, 255), 2)  
         return True
     
     return False
     
 
-for contour in contours:
+def sideCounterFun(contour):
+    """
+    Evalua el numero de lados rectos del contorno
+
+    """
     
-    M = cv2.moments(contour)
-    cx = int(M['m10']/M['m00'])
-    cy = int(M['m01']/M['m00'])
+    # Calcular el perímetro del contorno
+    perimeter = cv2.arcLength(contour, True)
+
+    # Aproximación poligonal del contorno
+    epsilon = 0.02 * perimeter
+    approx = cv2.approxPolyDP(contour, epsilon, True)
+    
+    # evitar dibujar el contorno de la imagen
+    if(len(approx) < 7 and perimeter < 300):
+        cv2.drawContours(img, [approx], 0, (255, 255, 0), 2) 
+        return len(approx)
+    elif perimeter < 300:   
+        return len(approx)
+    return 0
+
     
     
-    # dibuja centroide del blob
-    img=cv2.circle(img,(cx,cy),1, (0, 0, 255), 2)  
-    
+for i, contour in enumerate(contours):     
          
     if isCompleteCircle(contour):
-        circleCounter += 1        
+        circleCounter += 1  
+        ## detectar color y tamano aqui?
     elif isEllipse(contour):
         ellipseCounter += 1
-        
+    else:
+        lados = sideCounterFun(contour)
+        if(lados < 7):
+            sideCounter += lados
+        else:
+            IncompleteCircleCounter += 1
+            isIncompleteCircle(contour)
     
     
-print("Circulos completos: ", circleCounter)
-print("Elipses: ", ellipseCounter)
+print("Total circulos completos: ", circleCounter)
+print("Total circulos incompletos: ", IncompleteCircleCounter)
+print("Total Elipses: ", ellipseCounter)
+print("Total Lados: ", sideCounter)   
+
+for i, porcentaje in enumerate(porcentajes):
+    print(f"El porcentaje de cuña que le falta al semicirculo {i+1} es {porcentaje}%")
     
- 
+    
 cv2.imshow("Blob", img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
     
     
-# =============================================================================
-#     # bounding rectangle
-#     x,y,w,h = cv2.boundingRect(contour)
-#     img = cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-#     
-#     # rotated rectangle
-#     rect = cv2.minAreaRect(contour)
-#     box = cv2.boxPoints(rect)
-#     box = np.int0(box)
-#     img = cv2.drawContours(img,[box],0,(0,0,255),2)
-# 
-   
-
-#     
-#     # line
-#     rows,cols = img.shape[:2]
-#     [vx,vy,x,y] = cv2.fitLine(contour, cv2.DIST_L2,0,0.01,0.01)
-#     lefty = int((-x*vy/vx) + y)
-#     righty = int(((cols-x)*vy/vx)+y)
-#     img = cv2.line(img,(cols-1,righty),(0,lefty),(0,255,0),2)
-# =============================================================================
-
-
