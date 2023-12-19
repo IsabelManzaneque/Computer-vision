@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-File: apartadosAyB.py
+File: apartadoC.py
 Author: Isabel Manzaneque
 Date: 15/12/2023 
 Description: Descriptores de puntos característicos.
