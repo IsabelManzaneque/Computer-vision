@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-File: apartadoA.py
+File: apartadoB.py
 Author: Isabel Manzaneque
 Date: 20/12/2023 
 Description: Reconocimiento de objetos.
