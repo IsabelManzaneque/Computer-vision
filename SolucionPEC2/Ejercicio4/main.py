@@ -2,8 +2,103 @@
 """
 File: main.py
 Author: Isabel Manzaneque
-Date: 12/12/2023 
+Date: 20/12/2023 
 Description: Aplicación de reconocimiento de objetos.
 
 """
+
+import cv2
+import numpy as np
+import glob
+
+def adquisicion():
+    #return glob.glob(".\\assets\\*")
+  
+    return cv2.imread(".\\assets\\crucesA.jpg")
+        
+
+def preprocesado(img):
+    
+    # Convertir a escala de grises
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 100, 200)
+    kernel = np.ones((3,3), np.uint8)
+    dilated_edges = cv2.dilate(edges, kernel, iterations=1)
+    closed_edges = cv2.erode(dilated_edges, kernel, iterations=1)
+    
+    return closed_edges
+
+
+def segmentacion(img):
+    
+    grayImg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(grayImg, 200, 255, cv2.THRESH_BINARY_INV) 
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    return contours
+    
+    
+
+
+def descripcion(img, contours):
+    
+    
+    for i, contour in enumerate(contours):
+        
+        M = cv2.moments(contour)
+        contourArea = cv2.contourArea(contour)
+        cx = int(M['m10']/M['m00'])
+        cy = int(M['m01']/M['m00'])
+        
+        
+        # evitar el contorno de la caja        
+        if contourArea < 20000 and contourArea > 100:
+            
+            perimeter = cv2.arcLength(contour, True)
+            epsilon = 0.0001 * perimeter
+            approx = cv2.approxPolyDP(contour, epsilon, True)
+            cv2.drawContours(img, [approx], 0, (0, 255, 0), 2)  
+            
+            x,y,w,h = cv2.boundingRect(contour)
+            img = cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
+            
+            # en una cruz griega, la relacion entre los lados del rectangulo
+            # deberia ser practicamente 1
+            
+            cv2.putText(img, str(i), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,0,255), 1)
+            print(f"Contorno {i}: w = {w}, h = {h}")
+                        
+    return img
+
+
+    
+   
+   
+
+def reconocimiento():
+    pass
+
+
+
+img = adquisicion()
+
+    
+contornos = segmentacion(img)   
+descrita =  descripcion(img, contornos)
+
+cv2.imshow("Resultado", descrita)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
+# =============================================================================
+# images = adquisicion()
+# for imgPath in images:
+#     
+#     img = cv2.imread(imgPath)
+#     processedImg = segmentacion(img)    
+#     cv2.imshow("Resultado", processedImg)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+# =============================================================================
 
