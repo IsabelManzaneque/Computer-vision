@@ -14,7 +14,7 @@ import glob
 def adquisicion():
     #return glob.glob(".\\assets\\*")
   
-    return cv2.imread(".\\assets\\crucesA.jpg")
+    return cv2.imread(".\\assets\\cruces.jpg")
         
 
 def preprocesado(img):
@@ -49,10 +49,11 @@ def descripcion(img, contours):
         contourArea = cv2.contourArea(contour)
         cx = int(M['m10']/M['m00'])
         cy = int(M['m01']/M['m00'])
-        
-        
+                
         # evitar el contorno de la caja        
         if contourArea < 20000 and contourArea > 100:
+            
+            cv2.putText(img, str(i), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,0,255), 1)
             
             perimeter = cv2.arcLength(contour, True)
             epsilon = 0.0001 * perimeter
@@ -60,13 +61,18 @@ def descripcion(img, contours):
             cv2.drawContours(img, [approx], 0, (0, 255, 0), 2)  
             
             x,y,w,h = cv2.boundingRect(contour)
+            cxRect = x + w // 2
+            cyRect = y + h // 2
+               
             img = cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
             
-            # en una cruz griega, la relacion entre los lados del rectangulo
-            # deberia ser practicamente 1
+            # Si el centro del contorno se corresponde con el del rectangulo y 
+            # y los lados del rectangulo tienen la misma longitud, es cruz griega
             
-            cv2.putText(img, str(i), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,0,255), 1)
-            print(f"Contorno {i}: w = {w}, h = {h}")
+            print(f"Contorno {i}: abs(w-h): {abs(w-h)}, abs(cx-cxRect): {abs(cx-cxRect)}, abs(cy-cyRect): {abs(cy-cyRect)}  ")
+            
+            if abs(w-h) < 5 and abs(cx-cxRect) < 3 and abs(cy-cyRect) < 3:
+                print(f"Contorno {i}: es una cruz griega ")
                         
     return img
 
@@ -86,7 +92,8 @@ img = adquisicion()
 contornos = segmentacion(img)   
 descrita =  descripcion(img, contornos)
 
-cv2.imshow("Resultado", descrita)
+cv2.imshow("result", cv2.resize(descrita, None, fx=0.8, fy=0.8))
+#cv2.imshow("Resultado", descrita)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
