@@ -9,7 +9,7 @@ Description: Segmentación con conocimiento del dominio.
 
 import cv2
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 img = cv2.imread(".\\assets\\textoMolinos.png")
 
@@ -65,22 +65,15 @@ def rotate(meanAngle):
 def segment(rotatedImg):
     
   
-    grayImg = cv2.cvtColor(rotatedImg.copy(),cv2.COLOR_BGR2GRAY)   
-    #thresh = cv2.threshold(grayImg, 200, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]   
-    #thresh = cv2.threshold(grayImg, 170, 255, cv2.THRESH_BINARY_INV)[1]    
-    #thresh = cv2.threshold(grayImg, 170, 255, cv2.THRESH_BINARY)[1]      
-    
-    # si usas esto no uses threshold y pasale edges a findContours
-    blurredImg = cv2.GaussianBlur(grayImg, (5, 5), 0)
-    edges = cv2.Canny(blurredImg, 50, 150)
-                      
-                      
+    grayImg = cv2.cvtColor(rotatedImg.copy(),cv2.COLOR_BGR2GRAY)      
+    thresh = cv2.threshold(grayImg, 170, 255, cv2.THRESH_BINARY_INV)[1]     
+        
     # Deteccion de contornos
-    contours, h = cv2.findContours(edges, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
     # Eliminar los contornos de la bounding box
     filteredContours = []
-    filteredh = []
+    filteredHierarchy = []      
     
     for i, contour in enumerate(contours):
         rect = cv2.minAreaRect(contour)
@@ -89,131 +82,105 @@ def segment(rotatedImg):
         # 100 es un threshold de tamano
         if max(width, height) < 100:
             filteredContours.append(contour)    
-            filteredh.append(h[0][i][3])
+            filteredHierarchy.append(hierarchy[0][i][3])
     # Devuelve y dibuja los contornos para visualizacion
     contouredImg = cv2.drawContours(rotatedImg.copy(), filteredContours, -1, (0,255,0), 3)
     
-    return contouredImg, filteredContours, filteredh
+    return contouredImg, filteredContours
 
 
+# =============================================================================
+# def scaleContour(contour, scaleFactorX, scaleFactorY):
+#     
+#     # Centroide del contorno
+#     M = cv2.moments(contour)
+#     
+#     if M['m00'] != 0:
+#         cx = int(M['m10']/M['m00'])
+#         cy = int(M['m01']/M['m00'])
+#         
+#         # Trasladar al origen restando el centro a todos los puntos
+#         contourNorm = contour - [cx,cy]
+#         
+#         # Escalar cada punto del contorno
+#         contourScaled = np.column_stack((
+#             contourNorm[:, 0, 0] * scaleFactorX,
+#             contourNorm[:, 0, 1] * scaleFactorY
+#         ))
+#         
+#         # Devolverlo a su sitio
+#         contourScaled = contourScaled + [cx, cy]
+#         contourScaled = contourScaled.astype(np.int32)
+#         
+#         return contourScaled
+#     
+#     return contour
+# =============================================================================
 
-def scaleContour(contour, scaleFactorX, scaleFactorY):
-    
-    # Centroide del contorno
-    M = cv2.moments(contour)
-    
-    if M['m00'] != 0:
-        cx = int(M['m10']/M['m00'])
-        cy = int(M['m01']/M['m00'])
-        
-        # Trasladar al origen restando el centro a todos los puntos
-        contourNorm = contour - [cx,cy]
-        
-        # Escalar cada punto del contorno
-        contourScaled = np.column_stack((
-            contourNorm[:, 0, 0] * scaleFactorX,
-            contourNorm[:, 0, 1] * scaleFactorY
-        ))
-        
-        # Devolverlo a su sitio
-        contourScaled = contourScaled + [cx, cy]
-        contourScaled = contourScaled.astype(np.int32)
-        
-        return contourScaled
-    
-    return contour
-
-def Normalization1(contours, j) :
+def Normalization1(img, contours) :
     """
     Estire la dimensión más estrecha de la letra para que la 
     dimensión final sea de 20x20.
 
     """
-    imgCopy = img.copy()
-    # Crear una imagen en blanco del mismo tamaño que la imagen original
-    height, width = imgCopy.shape[:2]
-    white_background = np.ones((height, width, 3), dtype=np.uint8) * 255
-    
-    #contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
+    letrasNormalizadas = []
     
     for contour in contours:
+        # obtener rectangulo delimitador de cada contorno
+        x,y,w,h = cv2.boundingRect(contour)
+    
+        # Recorta y redimensiona la letra a 20 x 20
+        letra = img[y:y+h, x:x+w]                
+        letraNormalizada = cv2.resize(letra, (20, 20))
         
-
-        # rectángulo delimitador del contorno
-        x, y, w, h = cv2.boundingRect(contour)
-
-        # Calcular escala en x e y
-        scaleFactorX = 20 / w
-        scaleFactorY = 20 / h
-        
-        # escalar contorno a 20x20 y anadir el desplazamiento
-        scaledContour = scaleContour(contour, scaleFactorX, scaleFactorY) 
-        #scaledContour = scaledContour + (xOffset, yOffset)
-        
-        # rectangulo del nuevo contorno
-        scaledX, scaledY, scaledW, scaledH = cv2.boundingRect(scaledContour)  
-        cv2.drawContours(white_background, [scaledContour], -1, (0, 0, 0), 1)         
-            
-        
-    return white_background
+        letrasNormalizadas.append(letraNormalizada)
+     
+    return letrasNormalizadas
 
 
-def Normalization2(contours) :
+def Normalization2(img, contours) :
     """
     Ajusta la escala para que la dimensión mayor de la letra sea de 20 píxeles 
     y rellene el espacio en la otra dimensión para que el tamaño final sea de 
     20x20 y la letra esté centrada.
     """
-    imgCopy = img.copy()
-    # Crear una imagen en blanco del mismo tamaño que la imagen original
-    height, width = imgCopy.shape[:2]
-    white_background = np.ones((height, width, 3), dtype=np.uint8) * 255
-    
-    # Dibujar los contornos en la imagen en blanco
-    for contour in contours:
-        cv2.drawContours(white_background, [contour], -1, (0, 0, 0))
-    
-    # Mostrar la imagen
-    
-    return white_background
-
-
-
-   
-def Normalization3(rotatedImg, contours) :     
-    
-    imgCopy = rotatedImg.copy()
-    height, width = imgCopy.shape[:2]
-    white_background = np.ones((height, width, 3), dtype=np.uint8) * 255
-    
+    letrasNormalizadas = []
     
     for contour in contours:
+        # obtener rectangulo delimitador de cada contorno
+        x,y,w,h = cv2.boundingRect(contour)
+    
+        # Recorta y redimensiona la letra a 20 x 20
+        letra = img[y:y+h, x:x+w]                
+        
+        h, w = letra.shape[:2]
+        
+        # Escalar para que la dimensión mayor sea de 20 píxeles
+        escala = 20 / max(w, h)
+        nuevo_w, nuevo_h = int(w * escala), int(h * escala)
+        letra_redimensionada = cv2.resize(letra, (nuevo_w, nuevo_h))
+        
+        # Calcular el relleno necesario para cada dimensión
+        pad_w = (20 - nuevo_w) // 2
+        pad_h = (20 - nuevo_h) // 2
         
         
-        x, y, w, h = cv2.boundingRect(contour)
-        imgCrop = imgCopy[y:y+h, x:x+w]
+        letraNormalizada = cv2.copyMakeBorder(letra_redimensionada, pad_h, pad_h, pad_w, pad_w, cv2.BORDER_CONSTANT, value=[255, 255, 255])
         
-        scaleFactorX = 20 / w
-        scaleFactorY = 20 / h
-        
-        imgResized = cv2.resize(imgCrop, (0,0), fx=scaleFactorX, fy=scaleFactorY)  
-        
-        # Calculate the position to place imgResized (e.g., centering it within the bounding box)
-        offsetX = x + (w - imgResized.shape[1]) // 2
-        offsetY = y + (h - imgResized.shape[0]) // 2
+        letrasNormalizadas.append(letraNormalizada)
+     
+    return letrasNormalizadas
 
-        # Place imgResized onto white_background
-        white_background[offsetY:offsetY+imgResized.shape[0], offsetX:offsetX+imgResized.shape[1]] = imgResized
-
-    return white_background
 
 houghLinesImg, meanAngle = drawHoughLines()
 rotatedImg = rotate(meanAngle)
-segmentated = segment(rotatedImg)[0]
-contours = segment(rotatedImg)[1]
-h = segment(rotatedImg)[2]
+# se encuentran los contornos sobre la imagen rotada
+contouredImg, contours = segment(rotatedImg)
+# se extraen las letras de la imagen rotada
+letrasNormalizadas1 = Normalization1(rotatedImg, contours)
+letrasNormalizadas2 = Normalization2(rotatedImg, contours)
 
+for letra in letrasNormalizadas2:
+    plt.imshow(letra)
+    plt.show()
 
-cv2.imshow("NORMALIZATED", Normalization1(contours, h))
-cv2.waitKey(0)
-cv2.destroyAllWindows()
