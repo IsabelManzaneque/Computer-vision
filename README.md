@@ -17,6 +17,8 @@ Proyectos en los que se practican algunos de los conceptos básicos de la admini
 
 https://github.com/IsabelManzaneque/PEC1_VA/tree/main/Calibracion%20de%20la%20camara
 
+Se sigue el tutorial de la documentación oficial de opencv (https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html) para realizar la calibración de la cámara de un smartphone utilizando un set propio de imágenes de un tablero.
+
 ## Descriptores de puntos caracteristicos
 
 https://github.com/IsabelManzaneque/PEC1_VA/tree/main/Descriptores%20de%20puntos%20caracteristicos
@@ -61,5 +63,13 @@ https://github.com/IsabelManzaneque/PEC1_VA/tree/main/Segmentacion%20sin%20conoc
 
 https://github.com/IsabelManzaneque/PEC1_VA/tree/main/Transformaciones%20geometricas
 
+Aplicación sencilla que permite al usuario aplicar distintas transformaciones geométricas a una imagen. Las opciones disponibles son: 
 
+- Reescalar y rotar: Aplica a la imagen parámetro un reescalado de 200 x 200 pixels, una rotacion de 45 grados alrededor del su centro y un reescalado 1:0.7
+- Transformacion afin compuesta 1:  Implementa las siguientes transformaciones por separado (con matrices de transformación distintas): Inclinar 30 grados a la derecha la imagen de entrada , girar 90 grados a la izquierda con centro de giro en el centro de la img, reescalar a la mitad en ambos ejes la imagen obtenida de T2. 
+- Transformacion afin compuesta 2: Implementa las anteriores transformaciones en un solo paso (con una sola matriz de transformacioón)
+- Transformacion polar: obtiene una imagen logPolar cuadrada, centrada en el centro de la imagen original con una fila por grado y ajustada para ver toda la imagen original. 
+- Deshacer transformacion polar: Deshace una transformación polar aplicada a una imagen realizando la transformación inversa
+- Transformacion no lineal:  Deforma la imagen de manera que su mitad izquierda ocupa 1/3 de la imagen final y la mitad derecha ocupa los 2/3 restantes. 
+- Llevar rectangulo a objetivo: Genera una imagen sintetica de un rectangulo de lado 40 x 20 sobre un fondo y realiza una secuencia de transformaciones para colocarlo en una posicion objetivo 
 
